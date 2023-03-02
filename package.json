@@ -1,0 +1,12 @@
+{
+  "name": "detector",
+  "version": "1.0.0",
+  "description": "![motion detector](http://i.imgur.com/db4bQPw.gif)",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc --w",
+    "build": "NODE_ENV=production tsc"
+  },
+  "author": "",
+  "license": "ISC"
+}
