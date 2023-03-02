@@ -238,6 +238,7 @@ class MotionDetect {
             movementThreshold: d.movementThreshold,
         });
         const detected = gd.detect(d.frames);
+        useBanner(!!detected);
         let msg = detected ? {
             motions: detected,
             gd: {
@@ -260,13 +261,13 @@ const options = {
         x: 100 * 2,
         y: 50 * 2,
     },
-    debug: true,
+    debug: false,
     pixelDiffThreshold: 0.05,
     movementThreshold: 0.0001,
     fps: 30,
     canvasOutputElem: document.getElementById('dest')
 };
-var overlay = document.getElementById('overlay');
+const overlay = document.getElementById('overlay');
 const ctx = overlay.getContext('2d', { willReadFrequently: true });
 let timeoutClear;
 const md = new MotionDetect('src', options);
@@ -303,4 +304,20 @@ md.onDetect((other, data) => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }, 1000);
 });
+let banner = document.getElementById('banner');
+let clearTimer = 0;
+let delay = false;
+const useBanner = (has) => {
+    banner || (banner = document.getElementById('banner'));
+    if (delay || !banner)
+        return;
+    delay = true;
+    setTimeout(() => delay = false, has ? 1000 : 50);
+    if (has) {
+        banner.style.backgroundColor = 'red';
+    }
+    else {
+        banner.style.backgroundColor = 'green';
+    }
+};
 //# sourceMappingURL=index.js.map

@@ -371,6 +371,7 @@ class MotionDetect {
 
         // get result
         const detected = gd.detect(d.frames);
+        useBanner(!!detected)
         let msg = detected ? {
             motions: detected,
             gd: {
@@ -403,14 +404,14 @@ const options = {
         x: 100 * 2,
         y: 50 * 2,
     },
-    debug: true,
+    debug: false,
     pixelDiffThreshold: 0.05,
     movementThreshold: 0.0001,
     fps: 30,
     canvasOutputElem: document.getElementById('dest')
 }
 
-var overlay = document.getElementById('overlay') as HTMLCanvasElement;
+const overlay = document.getElementById('overlay') as HTMLCanvasElement;
 const ctx = overlay.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
 let timeoutClear;
 
@@ -429,17 +430,16 @@ md.onDetect((other, data) => {
     const gs = data.gd.size;
     const cs = data.gd.cellSize;
     const csActualRatio = data.gd.actualCellSizeRatio;
-    // console.log({ csActualRatio })
     // scale up cell size
     const cellArea = cs.x * cs.y;
     cs.x *= csActualRatio;
     cs.y *= csActualRatio;
 
     ctx.strokeStyle = 'rgba(0, 80, 200, 0.2)';
-
+    // return
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    
-    // return console.log('HAS!')
+
+
     grid.forEach((cell, i) => {
 
         let intensity = cell / cellArea;
@@ -464,3 +464,22 @@ md.onDetect((other, data) => {
     }, 1000);
 
 })
+
+
+
+let banner = document.getElementById('banner') as HTMLElement
+let clearTimer = 0
+let delay = false
+const useBanner = (has: boolean) => {
+    banner ||= document.getElementById('banner') as HTMLElement
+    if (delay || !banner) return
+    delay = true
+    setTimeout(() => delay = false, has ? 1000 : 50)
+
+    if (has) {
+        banner.style.backgroundColor = 'red'
+    } else {
+        banner.style.backgroundColor = 'green'
+    }
+
+}
