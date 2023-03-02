@@ -106,18 +106,18 @@ class MotionDetect {
                 y: 4
             },
             pixelDiffThreshold: 0.4,
-            movementThreshold: 0.001,
+            movementThreshold: 0.0001,
             debug: false,
             canvasOutputElem: document.createElement('canvas')
         };
         this.video = document.getElementById(srcId);
         this.fps = options.fps || this.defaults.fps;
         this.canvas = options.canvasOutputElem || this.defaults.canvasOutputElem;
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
         const shadowCanvas = document.createElement('canvas');
-        this.shadow = shadowCanvas.getContext('2d');
+        this.shadow = shadowCanvas.getContext('2d', { willReadFrequently: true });
         const scratchpad = document.createElement('canvas');
-        this.scratch = scratchpad.getContext('2d');
+        this.scratch = scratchpad.getContext('2d', { willReadFrequently: true });
         this.ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
         this.ctx.scale(-1, 1);
         this.size = {
@@ -153,7 +153,6 @@ class MotionDetect {
                     this.resize(this.size.x, this.size.x * heightToWidthRatio);
                 }, false);
             };
-            const onGetUserMediaError = (e) => { console.error(e); };
             const options = {
                 video: {
                     width: {
@@ -166,6 +165,7 @@ class MotionDetect {
                         ideal: 720,
                         max: 1080,
                     },
+                    facingMode: 'environment'
                 },
             };
             const stream = yield navigator.mediaDevices.getUserMedia(options);
@@ -257,17 +257,17 @@ class MotionDetect {
 }
 const options = {
     gridSize: {
-        x: 16 * 2,
-        y: 12 * 2,
+        x: 100 * 2,
+        y: 50 * 2,
     },
     debug: true,
-    pixelDiffThreshold: 0.3,
-    movementThreshold: 0.0012,
+    pixelDiffThreshold: 0.05,
+    movementThreshold: 0.0001,
     fps: 30,
     canvasOutputElem: document.getElementById('dest')
 };
 var overlay = document.getElementById('overlay');
-const ctx = overlay.getContext('2d');
+const ctx = overlay.getContext('2d', { willReadFrequently: true });
 let timeoutClear;
 const md = new MotionDetect('src', options);
 md.onDetect((other, data) => {
@@ -286,10 +286,12 @@ md.onDetect((other, data) => {
     ctx.strokeStyle = 'rgba(0, 80, 200, 0.2)';
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     grid.forEach((cell, i) => {
+        let intensity = cell / cellArea;
+        if (intensity === 0)
+            return;
+        ctx.fillStyle = intensity > options.movementThreshold ? `rgba(0, 80, 200, ${0.1 + intensity})` : 'transparent';
         const x = i % gs.x;
         const y = Math.floor(i / gs.x);
-        let intensity = cell / cellArea;
-        ctx.fillStyle = intensity > options.movementThreshold ? `rgba(0, 80, 200, ${0.1 + intensity})` : 'transparent';
         ctx.beginPath();
         ctx.rect(x * cs.x, y * cs.y, cs.x, cs.y);
         ctx.closePath();

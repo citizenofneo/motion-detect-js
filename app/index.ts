@@ -1,6 +1,6 @@
 // import MotionDetect from './components/MotionDetect' 
 // import 'styles/style.scss' 
-class GridDetect{
+class GridDetect {
     size: any;
     imageSize: any;
     workingSize: any;
@@ -27,11 +27,11 @@ class GridDetect{
         const diff = this.frameDiff(frames.prev, frames.curr);
 
         // if no valid diff
-        if (!diff) {return; };
+        if (!diff) { return; };
 
         // total pixels in frame
         const totalPix = diff.imageData.data.length / 4;
-
+        // console.log({ totalPix })
         // if not enough movement
         if (diff.count / totalPix < this.movementThreshold) {
             return false;
@@ -71,14 +71,14 @@ class GridDetect{
     // bitwise absolute and threshold
     // from https://www.adobe.com/devnet/archive/html5/articles/javascript-motion-detection.html
     makeThresh(min) {
-        return function(value) {
+        return function (value) {
             return (value ^ (value >> 31)) - (value >> 31) > min ? 255 : 0;
         };
     }
 
     // diff two frames, return pixel diff data, boudning box of movement and count
     frameDiff(prev, curr) {
-        if (prev == null || curr == null) { return false;};
+        if (prev == null || curr == null) { return false; };
 
         let avgP, avgC, diff, j, i;
         const p = prev.data;
@@ -115,17 +115,18 @@ class GridDetect{
 
         return {
             count: count,
-            imageData: new ImageData(pixels, this.workingSize.x), };
+            imageData: new ImageData(pixels, this.workingSize.x),
+        };
     }
 }
 
 
-class Util{
+class Util {
     // returns function that times it's execution
     static time(f, scope) {
         let start, end;
 
-        return function() {
+        return function () {
             start = new Date();
             const res = f.apply(this, arguments);
             end = new Date();
@@ -168,7 +169,7 @@ class MotionDetect {
                 y: 4
             },
             pixelDiffThreshold: 0.4,
-            movementThreshold: 0.001,
+            movementThreshold: 0.0001,
             debug: false,
             canvasOutputElem: document.createElement('canvas')
         }
@@ -179,17 +180,17 @@ class MotionDetect {
 
         // setup canvas
         this.canvas = options.canvasOutputElem || this.defaults.canvasOutputElem;
-        this.ctx = this.canvas.getContext('2d');
+        this.ctx = this.canvas.getContext('2d', { willReadFrequently: true });
 
         // shadow canvas to draw video frames before processing
         const shadowCanvas = document.createElement('canvas');
-        this.shadow = shadowCanvas.getContext('2d') as CanvasRenderingContext2D;
+        this.shadow = shadowCanvas.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
 
         // document.body.appendChild(this.shadow.canvas);
 
         // scratchpad
         const scratchpad = document.createElement('canvas');
-        this.scratch = scratchpad.getContext('2d') as CanvasRenderingContext2D;
+        this.scratch = scratchpad.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
 
         // document.body.appendChild(this.scratch.canvas);
 
@@ -251,9 +252,6 @@ class MotionDetect {
 
         };
 
-        // error callback
-        const onGetUserMediaError = (e) => { console.error(e); };
-
         // configure getusermedia
         // navigator.mediaDevices.getUserMedia = navigator.mediaDevices.getUserMedia
         const options = {
@@ -268,12 +266,13 @@ class MotionDetect {
                     ideal: 720,
                     max: 1080,
                 },
+                facingMode: 'environment'
             },
         };
 
         // do it!
-       const stream = await navigator.mediaDevices.getUserMedia(options);
-       onGetUserMediaSuccess(stream)
+        const stream = await navigator.mediaDevices.getUserMedia(options);
+        onGetUserMediaSuccess(stream)
     }
 
     resize(x, y) {
@@ -383,32 +382,6 @@ class MotionDetect {
 
 
         msg && this.onDetectCallback(this.ctx, msg);
-
-        // const worker = new GridDetectWorker();
-
-        // create worker thread
-        // worker.postMessage({
-        //     // frames to diff
-        //     frames: this.frames,
-
-        //     // thresholds
-        //     pixelDiffThreshold: this.pixelDiffThreshold,
-        //     movementThreshold: this.movementThreshold,
-
-        //     // grid size x cells by y cells
-        //     gdSize: this.gdSize,
-
-        //     // sizes for math
-        //     imageSize: this.size,
-        //     workingSize: this.workingSize,
-        // });
-
-        // worker.onmessage = (e) => {
-        //     // if has data to return, fire callback
-        //     if (e.data) {
-        //         this.onDetectCallback(this.ctx, e.data);
-        //     }
-        // };
     }
 
     // activate pausing mechanism
@@ -427,18 +400,18 @@ class MotionDetect {
 
 const options = {
     gridSize: {
-        x: 16*2,
-        y: 12*2,
+        x: 100 * 2,
+        y: 50 * 2,
     },
     debug: true,
-    pixelDiffThreshold: 0.3,
-    movementThreshold: 0.0012,
+    pixelDiffThreshold: 0.05,
+    movementThreshold: 0.0001,
     fps: 30,
     canvasOutputElem: document.getElementById('dest')
 }
 
 var overlay = document.getElementById('overlay') as HTMLCanvasElement;
-const ctx = overlay.getContext('2d') as CanvasRenderingContext2D;
+const ctx = overlay.getContext('2d', { willReadFrequently: true }) as CanvasRenderingContext2D;
 let timeoutClear;
 
 const md = new MotionDetect('src', options);
@@ -456,7 +429,7 @@ md.onDetect((other, data) => {
     const gs = data.gd.size;
     const cs = data.gd.cellSize;
     const csActualRatio = data.gd.actualCellSizeRatio;
-
+    // console.log({ csActualRatio })
     // scale up cell size
     const cellArea = cs.x * cs.y;
     cs.x *= csActualRatio;
@@ -465,12 +438,17 @@ md.onDetect((other, data) => {
     ctx.strokeStyle = 'rgba(0, 80, 200, 0.2)';
 
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    
+    // return console.log('HAS!')
     grid.forEach((cell, i) => {
-        const x = i % gs.x;
-        const y = Math.floor(i / gs.x);
+
         let intensity = cell / cellArea;
         // higher opacity for cells with more movement
+        if (intensity === 0) return
+
         ctx.fillStyle = intensity > options.movementThreshold ? `rgba(0, 80, 200, ${0.1 + intensity})` : 'transparent';
+        const x = i % gs.x;
+        const y = Math.floor(i / gs.x);
 
         ctx.beginPath();
         ctx.rect(x * cs.x, y * cs.y, cs.x, cs.y);
@@ -481,8 +459,8 @@ md.onDetect((other, data) => {
 
     ctx.restore();
 
-    timeoutClear = setTimeout(()=>{
+    timeoutClear = setTimeout(() => {
         ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     }, 1000);
-    
+
 })
